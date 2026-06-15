@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#2a0000"/>
+      <stop offset="55%" stop-color="#0a0000"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="eye" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="22%" stop-color="#ff4d4d"/>
+      <stop offset="60%" stop-color="#ff0000"/>
+      <stop offset="100%" stop-color="#7a0000"/>
+    </radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- фон -->
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- стикмен (чёрный силуэт с тёмно-красным контуром) -->
+  <g stroke="#3d0000" stroke-width="2.4" stroke-linecap="round" fill="none">
+    <!-- тело -->
+    <line x1="32" y1="30" x2="32" y2="45"/>
+    <!-- руки -->
+    <line x1="32" y1="34" x2="23" y2="41"/>
+    <line x1="32" y1="34" x2="41" y2="41"/>
+    <!-- ноги -->
+    <line x1="32" y1="45" x2="25" y2="55"/>
+    <line x1="32" y1="45" x2="39" y2="55"/>
+  </g>
+
+  <!-- голова -->
+  <circle cx="32" cy="20" r="12" fill="#000000" stroke="#5a0000" stroke-width="1.5"/>
+
+  <!-- красные светящиеся глаза -->
+  <g filter="url(#glow)">
+    <circle cx="27" cy="19" r="3.1" fill="url(#eye)"/>
+    <circle cx="37" cy="19" r="3.1" fill="url(#eye)"/>
+    <circle cx="27" cy="19" r="1.1" fill="#330000"/>
+    <circle cx="37" cy="19" r="1.1" fill="#330000"/>
+  </g>
+
+  <!-- зловещая ухмылка -->
+  <path d="M25 25 Q32 30 39 25" stroke="#7a0000" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+</svg>
