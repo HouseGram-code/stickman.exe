@@ -21,8 +21,8 @@
 <br/>
 
 <img src="https://img.shields.io/badge/GENRE-HORROR-000000?style=flat-square&labelColor=ff0000" />
-<img src="https://img.shields.io/badge/MADE_BY-FANS-000000?style=flat-square&labelColor=ff0000" />
 <img src="https://img.shields.io/badge/MOBILE-READY-000000?style=flat-square&labelColor=ff0000" />
+<img src="https://img.shields.io/badge/DEPLOY-VERCEL-000000?style=flat-square&labelColor=ff0000" />
 
 </div>
 
@@ -44,7 +44,7 @@
 
 ## 🩸 О проекте
 
-> **STICKMAN.EXE** — фанатская хоррор-игра в духе `.exe`-крипипаст, написанная на **Phaser 3 + TypeScript**.
+> **STICKMAN.EXE** — хоррор-игра в духе `.exe`-крипипаст, написанная на **Phaser 3 + TypeScript**.
 > Начинается всё как милая прогулка под весёлую музыку... но мир постепенно тонет в темноте и крови.
 > Ты не убегаешь от монстра. Ты идёшь к нему **сам**.
 
@@ -118,7 +118,27 @@ npm run dev
 npm run build
 ```
 
-Готовая версия появится в папке `dist/` — её можно залить на любой хостинг (GitHub Pages, itch.io, Netlify).
+Готовая версия появится в папке `dist/` — её можно залить на любой хостинг.
+
+### ▲ Деплой на Vercel
+
+В проекте есть `vercel.json` с готовыми настройками. Способы деплоя:
+
+**Через сайт Vercel**
+1. Зайди на [vercel.com](https://vercel.com) → **Add New → Project**
+2. Импортируй репозиторий `HouseGram-code/stickman.exe`
+3. Vercel сам определит настройки (или возьмёт их из `vercel.json`):
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+4. Жми **Deploy** — через пару минут игра будет онлайн.
+
+**Через CLI**
+
+```bash
+npm i -g vercel
+vercel          # превью-деплой
+vercel --prod   # продакшен-деплой
+```
 
 ---
 
@@ -151,18 +171,11 @@ stickman.exe/
 
 ---
 
-## ⚠️ Дисклеймер
-
-> Это **некоммерческий фанатский проект**, созданный из любви к жанру `.exe`-хоррора.
-> Все ассеты оригинальные/сгенерированы. Не связан с какими-либо правообладателями.
-
----
-
 <div align="center">
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:ff0000,50:7a0000,100:000000&height=140&section=footer" width="100%" />
 
-**Сделано фанатами. Включи звук. Не оборачивайся.**
+**Включи звук. Не оборачивайся.**
 
 <sub>🩸 STICKMAN.EXE — v0.1 beta 🩸</sub>
 
