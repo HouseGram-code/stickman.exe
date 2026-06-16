@@ -43,18 +43,22 @@ export class DialogBox {
         color: "#888888",
       })
       .setOrigin(1, 0)
-    // Прозрачная зона поверх окна диалога — тап продолжает реплику на телефоне
-    const tapZone = scene.add
-      .zone(W / 2, y + boxH / 2, W, boxH + 36)
-      .setInteractive({ useHandCursor: true })
-    tapZone.on("pointerdown", () => {
-      if (this.active) this.next()
-    })
     this.container = scene.add
-      .container(0, 0, [bg, this.portrait, this.nameText, this.bodyText, hint, tapZone])
+      .container(0, 0, [bg, this.portrait, this.nameText, this.bodyText, hint])
       .setScrollFactor(0)
       .setDepth(1000)
       .setVisible(false)
+
+    // Тап В ЛЮБОМ МЕСТЕ экрана продолжает реплику.
+    // Слушаем ввод на уровне всей сцены, чтобы кнопки управления (◀ ▶ ПРЫЖОК)
+    // или порядок отрисовки не перехватывали тап в режиме topOnly на телефоне.
+    scene.input.on(
+      Phaser.Input.Events.POINTER_DOWN,
+      () => {
+        if (this.active) this.next()
+      },
+      this
+    )
   }
 
   show(lines: DialogLine[], onComplete?: () => void) {
