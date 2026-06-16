@@ -52,13 +52,14 @@ export class DialogBox {
     // Тап В ЛЮБОМ МЕСТЕ экрана продолжает реплику.
     // Слушаем ввод на уровне всей сцены, чтобы кнопки управления (◀ ▶ ПРЫЖОК)
     // или порядок отрисовки не перехватывали тап в режиме topOnly на телефоне.
-    scene.input.on(
-      Phaser.Input.Events.POINTER_DOWN,
-      () => {
-        if (this.active) this.next()
-      },
-      this
-    )
+    const advance = () => {
+      if (this.active) this.next()
+    }
+    scene.input.on(Phaser.Input.Events.POINTER_DOWN, advance)
+    // Снимаем слушатель при остановке сцены, чтобы не было утечки.
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      scene.input.off(Phaser.Input.Events.POINTER_DOWN, advance)
+    })
   }
 
   show(lines: DialogLine[], onComplete?: () => void) {
@@ -68,6 +69,8 @@ export class DialogBox {
     this.active = true
     this.container.setVisible(true)
     this.render()
+    // Сообщаем сцене, что открылся диалог (например, чтобы спрятать сенсорные кнопки)
+    this.scene.events.emit("dialog-open")
   }
 
   private render() {
@@ -83,6 +86,7 @@ export class DialogBox {
     if (this.index >= this.lines.length) {
       this.active = false
       this.container.setVisible(false)
+      this.scene.events.emit("dialog-close")
       const cb = this.onComplete
       this.onComplete = undefined
       if (cb) cb()

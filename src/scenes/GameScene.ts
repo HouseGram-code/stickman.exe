@@ -63,12 +63,10 @@ export class GameScene extends Phaser.Scene {
 
     // Облака (параллакс)
     for (let i = 0; i < 8; i++) {
-      const c = this.add
+      this.add
         .image(200 + i * 600, 90 + (i % 3) * 60, "cloud")
         .setScrollFactor(0.3)
         .setDepth(-15)
-      this.trees.push() // noop keep types simple
-      void c
     }
 
     // Деревья

@@ -119,6 +119,27 @@ export class TouchControls {
     j.base.on("pointerup", () => j.release())
     j.base.on("pointerout", () => j.release())
     j.base.on("pointerupoutside", () => j.release())
+
+    // Во время диалогов прячем кнопки и сбрасываем ввод,
+    // чтобы тап по реплике не «застревал» как прыжок/движение.
+    scene.events.on("dialog-open", this.onDialogOpen, this)
+    scene.events.on("dialog-close", this.onDialogClose, this)
+    // Снимаем слушатели при остановке/рестарте сцены, чтобы не накапливались.
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      scene.events.off("dialog-open", this.onDialogOpen, this)
+      scene.events.off("dialog-close", this.onDialogClose, this)
+    })
+  }
+
+  private onDialogOpen() {
+    this.left = false
+    this.right = false
+    this.jumpQueued = false
+    this.setVisible(false)
+  }
+
+  private onDialogClose() {
+    this.setVisible(true)
   }
 
   // Возвращает true один раз после нажатия кнопки прыжка.
@@ -132,7 +153,7 @@ export class TouchControls {
 
   setVisible(v: boolean) {
     for (const o of this.objects) {
-      ;(o as Phaser.GameObjects.Components.Visible).setVisible(v)
+      ;(o as unknown as Phaser.GameObjects.Components.Visible).setVisible(v)
     }
   }
 }

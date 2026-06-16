@@ -1,5 +1,5 @@
 import Phaser from "phaser"
-import { DialogBox, DialogLine } from "../ui/Dialog"
+import { DialogBox } from "../ui/Dialog"
 import { TouchControls } from "../ui/TouchControls"
 
 const WORLD_W = 6000
