@@ -15,6 +15,11 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5)
     this.load.on("complete", () => t.destroy())
 
+    // Логируем файлы, которые не удалось загрузить (для отладки на проде)
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      console.warn(`[loader] не загрузился ресурс: ${file.key} (${file.src})`)
+    })
+
     this.load.spritesheet("player", "assets/player.png", {
       frameWidth: 48,
       frameHeight: 64,
@@ -65,6 +70,97 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    this.installSafeAudio()
     this.scene.start("MenuScene")
   }
+
+  // Делает воспроизведение звука безопасным для ВСЕЙ игры:
+  // если аудио-файл не загрузился (например 404), звук просто пропускается,
+  // а не роняет игровой цикл необработанной ошибкой "Audio key not found in cache".
+  private installSafeAudio() {
+    const sm = this.sound as unknown as {
+      __safe?: boolean
+      play: (key: string, extra?: unknown) => unknown
+      add: (key: string, config?: unknown) => unknown
+    }
+    if (sm.__safe) return
+    sm.__safe = true
+
+    const cache = this.cache.audio
+    const origPlay = sm.play.bind(sm)
+    const origAdd = sm.add.bind(sm)
+
+    sm.play = (key: string, extra?: unknown) => {
+      if (!cache.exists(key)) {
+        console.warn(`[audio] звук "${key}" пропущен — файл не загружен`)
+        return false
+      }
+      try {
+        return origPlay(key, extra)
+      } catch (e) {
+        console.warn(`[audio] не удалось проиграть "${key}"`, e)
+        return false
+      }
+    }
+
+    sm.add = (key: string, config?: unknown) => {
+      if (!cache.exists(key)) {
+        console.warn(`[audio] звук "${key}" не загружен — беззвучная заглушка`)
+        return makeSilentSound()
+      }
+      try {
+        return origAdd(key, config)
+      } catch (e) {
+        console.warn(`[audio] не удалось создать "${key}"`, e)
+        return makeSilentSound()
+      }
+    }
+  }
+}
+
+// Беззвучная заглушка с теми же методами, что используют сцены,
+// чтобы код вида music.play()/stop()/isPlaying и твины громкости не падали.
+function makeSilentSound(): Phaser.Sound.BaseSound {
+  const stub = {
+    isPlaying: false,
+    isPaused: false,
+    volume: 0,
+    play() {
+      this.isPlaying = true
+      return true
+    },
+    stop() {
+      this.isPlaying = false
+      return true
+    },
+    pause() {
+      this.isPaused = true
+      return true
+    },
+    resume() {
+      this.isPaused = false
+      return true
+    },
+    setVolume(v: number) {
+      this.volume = v
+      return this
+    },
+    setLoop() {
+      return this
+    },
+    setRate() {
+      return this
+    },
+    destroy() {},
+    on() {
+      return this
+    },
+    once() {
+      return this
+    },
+    off() {
+      return this
+    },
+  }
+  return stub as unknown as Phaser.Sound.BaseSound
 }
