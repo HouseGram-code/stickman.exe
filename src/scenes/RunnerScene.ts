@@ -275,15 +275,23 @@ export class RunnerScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(2002)
-    const okBtn = this.makeButton(640, 460, "ОК — НАЧАТЬ", 0x227722, () => {
+    const okBtn = this.makeButton(640, 460, "ОК — НАЧАТЬ (или Пробел)", 0x227722, () =>
+      begin()
+    )
+    okBtn.setDepth(2003)
+
+    // Запуск боя — гарантированно один раз (кнопка / Пробел / Enter)
+    const begin = () => {
+      if (this.phase !== "howto") return
       overlay.destroy()
       box.destroy()
       title.destroy()
       body.destroy()
       okBtn.destroy()
       this.startFight()
-    })
-    okBtn.setDepth(2003)
+    }
+    this.input.keyboard!.once("keydown-SPACE", begin)
+    this.input.keyboard!.once("keydown-ENTER", begin)
   }
 
   // ---------- БОЙ ----------
@@ -319,9 +327,11 @@ export class RunnerScene extends Phaser.Scene {
 
     this.player.play("player-run", true)
 
+    // Первая атака быстро, чтобы сразу было понятно что начался бой
+    this.time.delayedCall(900, () => this.exeAttack())
     // Атаки exe — чередуются лазеры и шипы
     this.attackTimer = this.time.addEvent({
-      delay: 1500,
+      delay: 1400,
       loop: true,
       callback: () => this.exeAttack(),
     })
@@ -340,30 +350,66 @@ export class RunnerScene extends Phaser.Scene {
   private exeAttack() {
     if (this.phase !== "fight") return
     const useLaser = Math.random() < 0.5
-    if (useLaser) {
-      this.exe.stop()
-      this.exe.setFrame(2)
-      this.sound.play("laser", { volume: 0.5 })
-      this.cameras.main.flash(120, 80, 0, 0)
-      const laser = this.hazards.create(1260, GROUND_TOP - 34, "laserbeam") as Phaser.Physics.Arcade.Sprite
-      laser.setDepth(7)
-      laser.setVelocityX(-440)
-      laser.setData("dmg", Phaser.Math.Between(10, 15))
-      ;(laser.body as Phaser.Physics.Arcade.Body).setSize(110, 14)
-    } else {
-      this.exe.stop()
-      this.exe.setFrame(3)
-      const spike = this.hazards.create(1260, GROUND_TOP - 10, "spike") as Phaser.Physics.Arcade.Sprite
-      spike.setOrigin(0.5, 1)
-      spike.setScale(0.75)
-      spike.setDepth(7)
-      spike.refreshBody()
-      spike.setVelocityX(-360)
-      spike.setData("dmg", Phaser.Math.Between(9, 13))
-      ;(spike.body as Phaser.Physics.Arcade.Body).setAllowGravity(false)
-    }
-    this.time.delayedCall(420, () => {
-      if (this.phase === "fight") this.exe.play("exe-fly-idle")
+
+    // ТЕЛЕГРАФ: босс заметно заряжает атаку — краснеет и пульсирует
+    this.exe.setTint(0xff5555)
+    this.tweens.add({
+      targets: this.exe,
+      scaleX: 1.3,
+      scaleY: 1.3,
+      duration: 200,
+      yoyo: true,
+      onComplete: () => this.exe.clearTint(),
+    })
+
+    // Сам выстрел через короткую задержку (после замаха)
+    this.time.delayedCall(220, () => {
+      if (this.phase !== "fight") return
+      if (useLaser) {
+        this.exe.stop()
+        this.exe.setFrame(2)
+        this.sound.play("laser", { volume: 0.55 })
+        this.cameras.main.flash(120, 80, 0, 0)
+        const laser = this.hazards.create(
+          1280,
+          GROUND_TOP - 40,
+          "laserbeam"
+        ) as Phaser.Physics.Arcade.Sprite
+        laser.setScale(1.7, 1.5)
+        laser.setDepth(7)
+        const body = laser.body as Phaser.Physics.Arcade.Body
+        body.setAllowGravity(false) // явно: лазер НЕ падает
+        laser.setVelocityX(-470)
+        laser.setData("dmg", Phaser.Math.Between(10, 15))
+        // пульсация, чтобы лазер был хорошо заметен
+        this.tweens.add({
+          targets: laser,
+          alpha: { from: 1, to: 0.5 },
+          duration: 90,
+          yoyo: true,
+          repeat: -1,
+        })
+      } else {
+        this.exe.stop()
+        this.exe.setFrame(3)
+        this.sound.play("hit", { volume: 0.4 })
+        const spike = this.hazards.create(
+          1280,
+          GROUND_TOP + 8,
+          "spike"
+        ) as Phaser.Physics.Arcade.Sprite
+        spike.setOrigin(0.5, 1)
+        spike.setScale(1.1)
+        spike.setDepth(7)
+        const body = spike.body as Phaser.Physics.Arcade.Body
+        body.setAllowGravity(false) // явно: шип НЕ падает
+        spike.setVelocityX(-400)
+        spike.setData("dmg", Phaser.Math.Between(9, 13))
+      }
+      // вернуть босса к парящей анимации
+      this.time.delayedCall(380, () => {
+        if (this.phase === "fight") this.exe.play("exe-fly-idle")
+      })
     })
   }
 
