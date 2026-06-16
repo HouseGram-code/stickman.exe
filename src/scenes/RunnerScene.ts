@@ -40,9 +40,15 @@ export class RunnerScene extends Phaser.Scene {
   private rockTimer?: Phaser.Time.TimerEvent
   private rockDelay?: Phaser.Time.TimerEvent
   private bgFar: Phaser.GameObjects.Rectangle[] = []
+  private skipIntro = false
 
   constructor() {
     super("RunnerScene")
+  }
+
+  init(data?: { skipIntro?: boolean }) {
+    // при «Попробовать заново» пропускаем интро и сразу в бой
+    this.skipIntro = data?.skipIntro === true
   }
 
   create() {
@@ -162,7 +168,21 @@ export class RunnerScene extends Phaser.Scene {
     this.music.play()
 
     this.cameras.main.fadeIn(700, 0, 0, 0)
-    this.startIntro()
+    if (this.skipIntro) {
+      this.startFightDirect()
+    } else {
+      this.startIntro()
+    }
+  }
+
+  // Рестарт сразу в бой (без повтора вбегания, диалогов и обучения)
+  private startFightDirect() {
+    this.player.setPosition(LANE_X, GROUND_TOP - 30)
+    this.player.setVelocity(0, 0)
+    this.exe.setVisible(true)
+    this.exe.setPosition(940, 230)
+    this.startBob()
+    this.startFight()
   }
 
   // ---------- КАТ-СЦЕНА: ПОБЕГ ----------
@@ -241,6 +261,7 @@ export class RunnerScene extends Phaser.Scene {
   // ---------- ОКНО ОБУЧЕНИЯ ----------
   private showHowTo() {
     this.phase = "howto"
+    this.touch.setVisible(false) // прячем кнопки за окном обучения
     const overlay = this.add
       .rectangle(640, 360, 1280, 720, 0x000000, 0.82)
       .setScrollFactor(0)
@@ -297,6 +318,7 @@ export class RunnerScene extends Phaser.Scene {
   // ---------- БОЙ ----------
   private startFight() {
     this.phase = "fight"
+    this.touch.setVisible(true) // кнопки управления нужны в бою
     if (this.music && this.music.isPlaying) this.music.stop()
     this.music = this.sound.add("boss_music", { loop: true, volume: 0.5 })
     this.music.play()
@@ -505,6 +527,7 @@ export class RunnerScene extends Phaser.Scene {
     if (this.phase === "over") return
     this.phase = "over"
     this.stopTimers()
+    this.touch.setVisible(false)
     this.hazards.clear(true, true)
     this.pickups.clear(true, true)
     this.exeBob?.stop()
@@ -566,6 +589,7 @@ export class RunnerScene extends Phaser.Scene {
     if (this.phase === "over") return
     this.phase = "over"
     this.stopTimers()
+    this.touch.setVisible(false)
     this.hazards.clear(true, true)
     this.pickups.clear(true, true)
     this.exeBob?.stop()
@@ -586,8 +610,8 @@ export class RunnerScene extends Phaser.Scene {
       onComplete: () => {
         this.bigText(210, "ИГРА ОКОНЧЕНА", "46px", "#cc0000")
         this.bigText(290, "СТИКМЕН.EXE оказался сильнее...", "22px", "#aaaaaa")
-        const retry = this.makeButton(640, 380, "Попробовать заново", 0x227722, () =>
-          this.scene.restart()
+        const retry = this.makeButton(640, 380, "↻ Попробовать заново", 0x227722, () =>
+          this.scene.restart({ skipIntro: true })
         )
         retry.setDepth(4500)
         this.menuButton(448, "В меню")

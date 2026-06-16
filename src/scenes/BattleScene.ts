@@ -498,21 +498,27 @@ export class BattleScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(2001)
     this.add
-      .text(640, 450, "🙂", { fontSize: "80px" })
+      .text(640, 430, "🙂", { fontSize: "70px" })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(2001)
     this.add
-      .text(640, 540, "Ха-ха-ха-ха!", {
+      .text(640, 510, "Ха-ха-ха-ха!", {
         fontFamily: "monospace",
-        fontSize: "30px",
+        fontSize: "28px",
         color: "#cc0000",
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(2001)
     this.sound.play("laugh", { volume: 0.8 })
-    this.menuButton(630, "Попробовать заново")
+    // «Попробовать заново» перезапускает именно бой, а не выкидывает в меню
+    const retry = this.makeButton(640, 585, "↻ Попробовать заново", 0x227722, () => {
+      if (this.music && this.music.isPlaying) this.music.stop()
+      this.scene.restart()
+    })
+    retry.setDepth(4500)
+    this.menuButton(648, "В меню")
   }
 
   // ---------- ВСПОМОГАТЕЛЬНЫЕ ----------
