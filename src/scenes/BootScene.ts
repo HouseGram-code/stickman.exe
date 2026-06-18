@@ -65,8 +65,22 @@ export class BootScene extends Phaser.Scene {
     })
     this.load.image("spike", "assets/spike.png")
     this.load.image("tg_icon", "assets/tg_icon.png")
+    this.load.image("syrok", "assets/syrok.jpg")
+    this.load.image("jimmy", "assets/jimmy.jpg")
+    this.load.image("patya", "assets/patya.jpg")
     this.load.audio("boss_music", "assets/boss_music.wav")
     this.load.audio("laser", "assets/laser.wav")
+
+    // Глава 5
+    this.load.audio("finale_music", "assets/finale_music.wav")
+    this.load.audio("exe_battle", "assets/exe_battle.wav")
+    this.load.audio("ring_win", "assets/ring_win.wav")
+    this.load.audio("exe_appear", "assets/exe_appear.wav")
+    this.load.audio("ring_collect", "assets/ring_collect.wav")
+    this.load.audio("ring_throw", "assets/ring_throw.wav")
+    this.load.audio("big_ring_hum", "assets/big_ring_hum.wav")
+    this.load.audio("teleport", "assets/teleport.wav")
+    this.load.audio("impact", "assets/impact.wav")
   }
 
   create() {

@@ -28,6 +28,18 @@ export class ChaseScene extends Phaser.Scene {
   private cueShown = false
   private autoJumped = false
 
+  // 🔥 Патя_рб — необязательный NPC в горящем лесу (Глава 2)
+  private patyaX = 900
+  private patyaY = GROUND_TOP - 85
+  private patyaContainer?: Phaser.GameObjects.Container
+  private patyaHint?: Phaser.GameObjects.Text
+  private interactBtn?: Phaser.GameObjects.Container
+  private interactQueued = false
+  private hasTouch = false
+  private eKey?: Phaser.Input.Keyboard.Key
+  private patyaTalking = false
+  private patyaDone = false
+
   constructor() {
     super("ChaseScene")
   }
@@ -37,6 +49,9 @@ export class ChaseScene extends Phaser.Scene {
     this.scared = false
     this.cueShown = false
     this.autoJumped = false
+    this.patyaTalking = false
+    this.patyaDone = false
+    this.interactQueued = false
 
     this.physics.world.setBounds(0, 0, WORLD_W, H)
     this.cameras.main.setBounds(0, 0, WORLD_W, H)
@@ -169,6 +184,10 @@ export class ChaseScene extends Phaser.Scene {
     )
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.touch = new TouchControls(this)
+    this.eKey = this.input.keyboard!.addKey("E")
+    this.hasTouch = this.sys.game.device.input.touch
+    this.buildPatya()
+    this.buildInteractButton()
 
     // Пробуждение
     this.time.delayedCall(1500, () => {
@@ -239,6 +258,7 @@ export class ChaseScene extends Phaser.Scene {
 
   private startChase() {
     this.phase = "chase"
+    this.hidePatyaPrompt()
     this.exe.setVisible(true)
     this.exe.x = this.player.x - 560
     this.exe.setFlipX(false)
@@ -333,7 +353,7 @@ export class ChaseScene extends Phaser.Scene {
           .setScrollFactor(0)
           .setDepth(4001)
         this.add
-          .text(640, 680, "STICKMAN.EXE  v0.1 beta", {
+          .text(640, 680, "STICKMAN.EXE  v0.2 beta", {
             fontFamily: "monospace",
             fontSize: "18px",
             color: "#444444",
@@ -395,6 +415,137 @@ export class ChaseScene extends Phaser.Scene {
     }
   }
 
+  // ---------- 🔥 ПАТЯ_РБ (необязательный NPC) ----------
+  private buildPatya() {
+    const frameSize = 150
+    const inner = frameSize - 14
+
+    const backdrop = this.add.rectangle(0, 0, frameSize, frameSize, 0x2a0a0a, 0.7)
+    const img = this.add.image(0, 0, "patya")
+    // вписываем картинку в рамку без искажений (ровно по пропорциям)
+    const scale = Math.min(inner / img.width, inner / img.height)
+    img.setScale(scale)
+    const border = this.add
+      .rectangle(0, 0, frameSize, frameSize)
+      .setStrokeStyle(5, 0xff9a3a)
+
+    const c = this.add
+      .container(this.patyaX, this.patyaY, [backdrop, img, border])
+      .setDepth(7)
+    this.patyaContainer = c
+
+    this.tweens.add({
+      targets: c,
+      y: this.patyaY - 6,
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    })
+
+    this.patyaHint = this.add
+      .text(this.patyaX, this.patyaY - frameSize / 2 - 28, "E — поговорить", {
+        fontFamily: "monospace",
+        fontSize: "20px",
+        color: "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setDepth(40)
+      .setVisible(false)
+  }
+
+  private buildInteractButton() {
+    if (!this.hasTouch) return
+    const w = 232
+    const h = 64
+    const bg = this.add
+      .rectangle(0, 0, w, h, 0xb5431a, 0.92)
+      .setStrokeStyle(4, 0xffffff)
+    const txt = this.add
+      .text(0, 0, "ПОГОВОРИТЬ", {
+        fontFamily: "monospace",
+        fontSize: "22px",
+        color: "#ffffff",
+      })
+      .setOrigin(0.5)
+    const c = this.add
+      .container(640, H - 78, [bg, txt])
+      .setScrollFactor(0)
+      .setDepth(960)
+      .setSize(w, h)
+      .setVisible(false)
+    c.setInteractive(
+      new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      Phaser.Geom.Rectangle.Contains
+    )
+    c.on("pointerdown", () => {
+      this.interactQueued = true
+      bg.setFillStyle(0xd6602f, 1)
+    })
+    c.on("pointerup", () => bg.setFillStyle(0xb5431a, 0.92))
+    c.on("pointerout", () => bg.setFillStyle(0xb5431a, 0.92))
+    this.interactBtn = c
+  }
+
+  private consumeInteract(): boolean {
+    if (this.interactQueued) {
+      this.interactQueued = false
+      return true
+    }
+    return false
+  }
+
+  private showPatyaPrompt() {
+    if (this.hasTouch) this.interactBtn?.setVisible(true)
+    else this.patyaHint?.setVisible(true)
+  }
+
+  private hidePatyaPrompt() {
+    this.interactBtn?.setVisible(false)
+    this.patyaHint?.setVisible(false)
+  }
+
+  private updatePatya(x: number) {
+    if (this.patyaDone || this.patyaTalking || this.dialog.active) {
+      this.hidePatyaPrompt()
+      return
+    }
+    if (Math.abs(x - this.patyaX) < 130) {
+      this.showPatyaPrompt()
+      const ePressed = this.eKey
+        ? Phaser.Input.Keyboard.JustDown(this.eKey)
+        : false
+      if (ePressed || this.consumeInteract()) this.patyaTalk()
+    } else {
+      this.hidePatyaPrompt()
+    }
+  }
+
+  private patyaTalk() {
+    if (this.patyaTalking || this.patyaDone) return
+    this.patyaTalking = true
+    this.player.setVelocityX(0)
+    this.player.stop()
+    this.player.setFrame(0)
+    this.player.setFlipX(this.player.x > this.patyaX)
+    this.hidePatyaPrompt()
+    this.dialog.show(
+      [
+        { speaker: "Патя_рб", text: "ААААОАОАОАО!!! ГОРИТ ВСЁ!!!", portrait: "patya" },
+        { speaker: "Стикмен", text: "Всё нормально?", portrait: "portrait_player" },
+        { speaker: "Патя_рб", text: "Да.", portrait: "patya" },
+        { speaker: "Стикмен", text: "Ну... ладно. Удачи.", portrait: "portrait_player" },
+        { speaker: "Патя_рб", text: "Спасибо.", portrait: "patya" },
+      ],
+      () => {
+        this.patyaTalking = false
+        this.patyaDone = true
+      }
+    )
+  }
+
   update(_time: number, delta: number) {
     if (this.phase === "lying" || this.phase === "done" || this.phase === "hide") {
       return
@@ -408,6 +559,7 @@ export class ChaseScene extends Phaser.Scene {
         return
       }
       this.controls()
+      this.updatePatya(x)
       if (!this.scared && x > SCARE_X) this.smallScare()
       return
     }

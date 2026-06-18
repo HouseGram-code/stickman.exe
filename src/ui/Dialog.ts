@@ -12,6 +12,9 @@ export class DialogBox {
   private index = 0
   private onComplete?: () => void
   public active = false
+  // Кадр, на котором открыли диалог. Нужен, чтобы тот же самый клик/тап,
+  // который выбрал пункт меню, не пролистнул мгновенно показанную реплику.
+  private openedFrame = -1
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -67,6 +70,7 @@ export class DialogBox {
     this.index = 0
     this.onComplete = onComplete
     this.active = true
+    this.openedFrame = this.scene.game.loop.frame
     this.container.setVisible(true)
     this.render()
     // Сообщаем сцене, что открылся диалог (например, чтобы спрятать сенсорные кнопки)
@@ -77,11 +81,17 @@ export class DialogBox {
     const line = this.lines[this.index]
     this.nameText.setText(line.speaker)
     this.bodyText.setText(line.text)
-    if (line.portrait) this.portrait.setTexture(line.portrait)
+    if (line.portrait) {
+      this.portrait.setTexture(line.portrait)
+      this.portrait.setDisplaySize(120, 120) // нормализуем размер любого портрета
+    }
   }
 
   next() {
     if (!this.active) return
+    // Защита от «двойного» срабатывания: тот же клик/тап, что открыл диалог
+    // (например, выбором варианта в меню), не должен сразу его пролистнуть.
+    if (this.scene.game.loop.frame === this.openedFrame) return
     this.index++
     if (this.index >= this.lines.length) {
       this.active = false

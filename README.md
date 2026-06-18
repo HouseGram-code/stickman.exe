@@ -13,7 +13,7 @@
 <br/>
 
 <!-- ░░ БЕЙДЖИ ░░ -->
-<img src="https://img.shields.io/badge/%E2%96%B6_PLAY-version_0.1_beta-ff0000?style=for-the-badge&labelColor=000000" />
+<img src="https://img.shields.io/badge/%E2%96%B6_PLAY-version_0.2_beta-ff0000?style=for-the-badge&labelColor=000000" />
 <img src="https://img.shields.io/badge/Phaser-3.80-ff1a1a?style=for-the-badge&logo=phaser&logoColor=white&labelColor=000000" />
 <img src="https://img.shields.io/badge/TypeScript-5.4-8b0000?style=for-the-badge&logo=typescript&logoColor=white&labelColor=000000" />
 <img src="https://img.shields.io/badge/Vite-5.2-7a0000?style=for-the-badge&logo=vite&logoColor=white&labelColor=000000" />
@@ -177,6 +177,6 @@ stickman.exe/
 
 **Включи звук. Не оборачивайся.**
 
-<sub>🩸 STICKMAN.EXE — v0.1 beta 🩸</sub>
+<sub>🩸 STICKMAN.EXE — v0.2 beta 🩸</sub>
 
 </div>

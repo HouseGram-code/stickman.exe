@@ -33,7 +33,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
     this.add
-      .text(640, 275, "версия 0.1 бета", {
+      .text(640, 275, "версия 0.2 бета", {
         fontFamily: "monospace",
         fontSize: "26px",
         color: "#888888",
@@ -174,7 +174,7 @@ export class MenuScene extends Phaser.Scene {
     )
 
     const note = this.add
-      .text(640, 565, "версия 0.1 бета — могут быть баги", {
+      .text(640, 565, "версия 0.2 бета — могут быть баги", {
         fontFamily: "monospace",
         fontSize: "16px",
         color: "#555555",

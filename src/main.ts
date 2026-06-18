@@ -6,6 +6,8 @@ import { GameScene } from "./scenes/GameScene"
 import { ChaseScene } from "./scenes/ChaseScene"
 import { BattleScene } from "./scenes/BattleScene"
 import { RunnerScene } from "./scenes/RunnerScene"
+import { FinaleScene } from "./scenes/FinaleScene"
+import { SecretRoomScene } from "./scenes/SecretRoomScene"
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -25,7 +27,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 3, // поддержка мультитача: движение + прыжок одновременно
   },
-  scene: [BootScene, MenuScene, CharacterSelectScene, GameScene, ChaseScene, BattleScene, RunnerScene],
+  scene: [BootScene, MenuScene, CharacterSelectScene, GameScene, ChaseScene, BattleScene, RunnerScene, FinaleScene, SecretRoomScene],
 }
 
 new Phaser.Game(config)

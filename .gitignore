@@ -1,3 +1,6 @@
 node_modules
 dist
 .vscode
+# исходные картинки, закинутые в корень (в репозитории используем копии в public/assets)
+/photo_*.jpg
+/photo_*.png

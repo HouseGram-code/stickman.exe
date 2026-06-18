@@ -570,16 +570,17 @@ export class RunnerScene extends Phaser.Scene {
       alpha: 1,
       duration: 1400,
       onComplete: () => {
-        this.bigText(120, "ТЫ ВЫРУБИЛ СТИКМЕН.EXE!", "34px", "#33dd33")
-        this.bigText(168, "Кошмар отступил... пока.", "20px", "#aaaaaa")
-        this.bigText(216, "ГЛАВА 4 ЗАВЕРШЕНА", "22px", "#888888")
-        this.bigText(272, "ИГРА ЕЩЁ НЕ ОКОНЧЕНА!", "32px", "#ffcc00")
-        this.bigText(318, "Мы уже делаем ГЛАВУ 5 🔥", "22px", "#ffffff")
-        this.bigText(360, "Простите, что не доделали :( Ждите обновление!", "17px", "#cccccc")
-        // Блок тех. поддержки
-        this.bigText(440, "Есть вопросы или нашли баг? Пишите в поддержку:", "18px", "#bbbbbb")
-        this.supportLink(505)
-        this.menuButton(630, "В меню")
+        this.bigText(110, "ТЫ ВЫРУБИЛ СТИКМЕН.EXE!", "32px", "#33dd33")
+        this.bigText(156, "Но он ещё дышит... Нужно бежать дальше!", "19px", "#aaaaaa")
+        this.bigText(212, "ГЛАВА 4 ЗАВЕРШЕНА", "22px", "#888888")
+        const next = this.makeButton(640, 300, "ГЛАВА 5 ▶", 0x227722, () => {
+          if (this.music && this.music.isPlaying) this.music.stop()
+          this.scene.start("FinaleScene")
+        })
+        next.setDepth(4500)
+        this.menuButton(372, "В меню")
+        this.bigText(470, "Нашли баг? Поддержка:", "17px", "#999999")
+        this.supportLink(520)
       },
     })
   }
@@ -630,7 +631,13 @@ export class RunnerScene extends Phaser.Scene {
   update() {
     if (this.phase !== "fight") return
     const body = this.player.body as Phaser.Physics.Arcade.Body
-    const onGround = body.blocked.down || body.touching.down
+    // ЖЁСТКИЙ ПОЛ: не даём игроку провалиться сквозь землю ни при каких условиях
+    if (this.player.y > GROUND_TOP - 30) {
+      this.player.y = GROUND_TOP - 30
+      if (body.velocity.y > 0) body.setVelocityY(0)
+    }
+    const onGround =
+      body.blocked.down || body.touching.down || this.player.y >= GROUND_TOP - 30
     if (onGround && this.player.anims.currentAnim?.key !== "player-run") {
       this.player.play("player-run", true)
     }

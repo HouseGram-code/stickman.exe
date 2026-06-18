@@ -35,6 +35,19 @@ export class GameScene extends Phaser.Scene {
   private revealed = false
   private flagTransition = false
   private flagHorror = false
+  private secretEntered = false
+
+  // 🐰 Джимми — необязательный NPC (аватарка-страж) дальше по уровню, в потемневшей зоне
+  private jimmyX = 2150
+  private jimmyY = GROUND_TOP - 85
+  private jimmyContainer?: Phaser.GameObjects.Container
+  private jimmyHint?: Phaser.GameObjects.Text
+  private interactBtn?: Phaser.GameObjects.Container
+  private interactQueued = false
+  private hasTouch = false
+  private eKey?: Phaser.Input.Keyboard.Key
+  private jimmyTalking = false
+  private jimmyDone = false
 
   constructor() {
     super("GameScene")
@@ -47,6 +60,10 @@ export class GameScene extends Phaser.Scene {
     this.revealed = false
     this.flagTransition = false
     this.flagHorror = false
+    this.secretEntered = false
+    this.jimmyTalking = false
+    this.jimmyDone = false
+    this.interactQueued = false
     this.birds = []
     this.bloods = []
     this.trees = []
@@ -189,6 +206,10 @@ export class GameScene extends Phaser.Scene {
     )
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.touch = new TouchControls(this)
+    this.eKey = this.input.keyboard!.addKey("E")
+    this.hasTouch = this.sys.game.device.input.touch
+    this.buildJimmy()
+    this.buildInteractButton()
 
     // Вступительный диалог
     this.time.delayedCall(700, () => {
@@ -357,7 +378,7 @@ export class GameScene extends Phaser.Scene {
           .setScrollFactor(0)
           .setDepth(2001)
         this.add
-          .text(640, 680, "STICKMAN.EXE  v0.1 beta", {
+          .text(640, 680, "STICKMAN.EXE  v0.2 beta", {
             fontFamily: "monospace",
             fontSize: "18px",
             color: "#444444",
@@ -369,15 +390,229 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
+  // 🥚 Переход в секретную комнату (как «возврат назад» в Sonic.exe)
+  private enterSecretRoom() {
+    this.secretEntered = true
+    this.controlsLocked = true
+    this.player.setVelocityX(0)
+    this.player.stop()
+    this.player.setFrame(0)
+    this.cameras.main.fadeOut(450, 0, 0, 0)
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      if (this.musicHappy.isPlaying) this.musicHappy.stop()
+      if (this.ambient.isPlaying) this.ambient.stop()
+      if (this.heartbeat.isPlaying) this.heartbeat.stop()
+      this.scene.start("SecretRoomScene")
+    })
+  }
+
+  // ---------- 🐰 ДЖИММИ (необязательный NPC) ----------
+  private buildJimmy() {
+    const frameSize = 150
+    const inner = frameSize - 14
+
+    const backdrop = this.add.rectangle(0, 0, frameSize, frameSize, 0x1a1430, 0.65)
+    const img = this.add.image(0, 0, "jimmy")
+    // вписываем картинку в рамку без искажений (ровно по пропорциям)
+    const scale = Math.min(inner / img.width, inner / img.height)
+    img.setScale(scale)
+    const border = this.add
+      .rectangle(0, 0, frameSize, frameSize)
+      .setStrokeStyle(5, 0xffd54a)
+
+    const c = this.add
+      .container(this.jimmyX, this.jimmyY, [backdrop, img, border])
+      .setDepth(6)
+    this.jimmyContainer = c
+
+    // мягкое покачивание
+    this.tweens.add({
+      targets: c,
+      y: this.jimmyY - 6,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    })
+
+    // Подсказка для ПК (в мире, над Джимми)
+    this.jimmyHint = this.add
+      .text(this.jimmyX, this.jimmyY - frameSize / 2 - 28, "E — поговорить", {
+        fontFamily: "monospace",
+        fontSize: "20px",
+        color: "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setDepth(40)
+      .setVisible(false)
+  }
+
+  // Кнопка «Поговорить» для сенсорных экранов
+  private buildInteractButton() {
+    if (!this.hasTouch) return
+    const w = 232
+    const h = 64
+    const bg = this.add
+      .rectangle(0, 0, w, h, 0x7a3aa0, 0.92)
+      .setStrokeStyle(4, 0xffffff)
+    const txt = this.add
+      .text(0, 0, "ПОГОВОРИТЬ", {
+        fontFamily: "monospace",
+        fontSize: "22px",
+        color: "#ffffff",
+      })
+      .setOrigin(0.5)
+    const c = this.add
+      .container(640, H - 78, [bg, txt])
+      .setScrollFactor(0)
+      .setDepth(960)
+      .setSize(w, h)
+      .setVisible(false)
+    c.setInteractive(
+      new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      Phaser.Geom.Rectangle.Contains
+    )
+    c.on("pointerdown", () => {
+      this.interactQueued = true
+      bg.setFillStyle(0x9a5ac0, 1)
+    })
+    c.on("pointerup", () => bg.setFillStyle(0x7a3aa0, 0.92))
+    c.on("pointerout", () => bg.setFillStyle(0x7a3aa0, 0.92))
+    this.interactBtn = c
+  }
+
+  private consumeInteract(): boolean {
+    if (this.interactQueued) {
+      this.interactQueued = false
+      return true
+    }
+    return false
+  }
+
+  private showJimmyPrompt() {
+    if (this.hasTouch) this.interactBtn?.setVisible(true)
+    else this.jimmyHint?.setVisible(true)
+  }
+
+  private hideJimmyPrompt() {
+    this.interactBtn?.setVisible(false)
+    this.jimmyHint?.setVisible(false)
+  }
+
+  private updateJimmy(x: number) {
+    // Общаться можно, когда не идёт другой диалог/катсцена
+    if (
+      this.jimmyDone ||
+      this.jimmyTalking ||
+      this.controlsLocked ||
+      this.autoWalk ||
+      this.dialog.active
+    ) {
+      this.hideJimmyPrompt()
+      return
+    }
+    if (Math.abs(x - this.jimmyX) < 130) {
+      this.showJimmyPrompt()
+      const ePressed = this.eKey
+        ? Phaser.Input.Keyboard.JustDown(this.eKey)
+        : false
+      if (ePressed || this.consumeInteract()) this.jimmyTalk()
+    } else {
+      this.hideJimmyPrompt()
+    }
+  }
+
+  private jimmyTalk() {
+    if (this.jimmyTalking || this.jimmyDone) return
+    this.jimmyTalking = true
+    this.controlsLocked = true
+    this.player.setVelocityX(0)
+    this.player.stop()
+    this.player.setFrame(0)
+    this.player.setFlipX(this.player.x > this.jimmyX)
+    this.hideJimmyPrompt()
+    this.dialog.show(
+      [
+        { speaker: "Джимми", text: "Чего тебе?", portrait: "jimmy" },
+        { speaker: "Стикмен", text: "А ты чё тут стоишь?", portrait: "portrait_player" },
+        { speaker: "Джимми", text: "Видишь, это моя аватарка — охраняю её.", portrait: "jimmy" },
+        { speaker: "Стикмен", text: "Аа, понятно.", portrait: "portrait_player" },
+        { speaker: "Стикмен", text: "Печеньку будешь?", portrait: "portrait_player" },
+        { speaker: "Джимми", text: "Да! Давай сюда.", portrait: "jimmy" },
+      ],
+      () => this.giveCookieToJimmy()
+    )
+  }
+
+  private giveCookieToJimmy() {
+    const startX = this.player.x + (this.player.flipX ? -22 : 22)
+    const cookie = this.makeCookie(startX, this.player.y - 6)
+    this.sound.play("click", { volume: 0.25 })
+    this.tweens.add({
+      targets: cookie,
+      x: this.jimmyX,
+      y: this.jimmyY,
+      duration: 700,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.sound.play("ring_collect", { volume: 0.4 })
+        this.tweens.add({
+          targets: cookie,
+          scale: 0,
+          duration: 320,
+          onComplete: () => cookie.destroy(),
+        })
+        if (this.jimmyContainer) {
+          this.tweens.add({
+            targets: this.jimmyContainer,
+            scaleX: 1.08,
+            scaleY: 0.92,
+            duration: 110,
+            yoyo: true,
+            repeat: 1,
+          })
+        }
+        this.time.delayedCall(520, () => {
+          this.dialog.show(
+            [
+              { speaker: "Джимми", text: "Ням-ням... Спасибо, бро!", portrait: "jimmy" },
+              { speaker: "Стикмен", text: "Пожалуйста!", portrait: "portrait_player" },
+            ],
+            () => {
+              this.controlsLocked = false
+              this.jimmyTalking = false
+              this.jimmyDone = true
+            }
+          )
+        })
+      },
+    })
+  }
+
+  private makeCookie(x: number, y: number) {
+    const body = this.add.circle(0, 0, 12, 0xd2a05a).setStrokeStyle(2, 0x9c6b2f)
+    const chips = [
+      this.add.circle(-4, -3, 2.2, 0x5a3416),
+      this.add.circle(4, 1, 2.2, 0x5a3416),
+      this.add.circle(-1, 5, 2.2, 0x5a3416),
+      this.add.circle(5, -5, 1.8, 0x5a3416),
+    ]
+    return this.add.container(x, y, [body, ...chips]).setDepth(30)
+  }
+
   update() {
     const x = this.player.x
-
     // Плавный переход цвета неба
     const t = Phaser.Math.Clamp((x - 700) / (END_X - 700), 0, 1)
     const col = Phaser.Display.Color.Interpolate.ColorWithColor(DAY, BLOOD, 100, t * 100)
     this.sky.setFillStyle(
       Phaser.Display.Color.GetColor(col.r, col.g, col.b)
     )
+
+    // 🐰 Джимми (необязательное общение)
+    this.updateJimmy(x)
 
     // События
     if (!this.flagTransition && x > TRANSITION_X) this.enterTransition()
@@ -395,6 +630,12 @@ export class GameScene extends Phaser.Scene {
 
     if (this.controlsLocked) {
       this.player.setVelocityX(0)
+      return
+    }
+
+    // 🥚 Секретная комната: уход НАЗАД (влево) в самом начале главы
+    if (!this.secretEntered && !this.flagTransition && x < 34) {
+      this.enterSecretRoom()
       return
     }
 
