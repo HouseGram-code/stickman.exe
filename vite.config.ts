@@ -12,8 +12,8 @@ export default defineConfig({
     VitePWA({
       // service worker обновляется сам, когда выходит новая сборка
       registerType: "autoUpdate",
-      // регистрация SW вставляется в index.html автоматически
-      injectRegister: "auto",
+      // регистрируем SW вручную из src/pwa.ts (чтобы показать прогресс/статус офлайна)
+      injectRegister: false,
       includeAssets: ["favicon.svg"],
       manifest: {
         id: "./",
