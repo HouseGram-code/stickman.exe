@@ -1,4 +1,6 @@
 import Phaser from "phaser"
+import { makeMenuButton } from "../ui/MenuButton"
+import { autoImmersiveOnFirstGesture, enterImmersive } from "../fullscreen"
 
 export class MenuScene extends Phaser.Scene {
   private infoOpen = false
@@ -8,13 +10,13 @@ export class MenuScene extends Phaser.Scene {
     super("MenuScene")
   }
 
-  private click() {
-    this.sound.play("click", { volume: 0.5 })
-  }
-
   create() {
     this.infoOpen = false
-    this.add.rectangle(640, 360, 1280, 720, 0x070707).setDepth(-1)
+
+    // на телефоне первый тап -> фуллскрин + альбомная ориентация
+    autoImmersiveOnFirstGesture(this)
+
+    this.buildBackground()
 
     // Музыка меню (запускается после первого клика, если браузер блокирует автозвук)
     if (!this.sound.get("music_menu")) {
@@ -24,81 +26,77 @@ export class MenuScene extends Phaser.Scene {
     }
     if (!this.menuMusic.isPlaying) this.menuMusic.play()
 
-    const title = this.add
-      .text(640, 200, "STICKMAN.EXE", {
+    // Заголовок с лёгкой тенью-глитчем
+    this.add
+      .text(643, 173, "STICKMAN.EXE", {
         fontFamily: "monospace",
-        fontSize: "88px",
+        fontSize: "92px",
+        color: "#3a0000",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+    const title = this.add
+      .text(640, 170, "STICKMAN.EXE", {
+        fontFamily: "monospace",
+        fontSize: "92px",
         color: "#cc0000",
         fontStyle: "bold",
       })
       .setOrigin(0.5)
-    this.add
-      .text(640, 275, "версия 0.2 бета", {
-        fontFamily: "monospace",
-        fontSize: "26px",
-        color: "#888888",
-      })
-      .setOrigin(0.5)
-
     this.tweens.add({
       targets: title,
-      alpha: 0.55,
-      duration: 90,
+      alpha: 0.5,
+      duration: 80,
       yoyo: true,
       repeat: -1,
-      repeatDelay: 1700,
-    })
-
-    const playBtn = this.add
-      .text(640, 410, "  ИГРАТЬ  ", {
-        fontFamily: "monospace",
-        fontSize: "42px",
-        color: "#ffffff",
-        backgroundColor: "#770000",
-        padding: { x: 26, y: 14 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-    playBtn.on("pointerover", () =>
-      playBtn.setStyle({ backgroundColor: "#aa0000" })
-    )
-    playBtn.on("pointerout", () =>
-      playBtn.setStyle({ backgroundColor: "#770000" })
-    )
-    playBtn.on("pointerdown", () => {
-      if (this.infoOpen) return
-      this.click()
-      if (this.menuMusic.isPlaying) this.menuMusic.stop()
-      this.cameras.main.fadeOut(400, 0, 0, 0)
-      this.time.delayedCall(420, () => this.scene.start("CharacterSelectScene"))
-    })
-
-    const infoBtn = this.add
-      .text(640, 500, "  ИНФОРМАЦИЯ  ", {
-        fontFamily: "monospace",
-        fontSize: "30px",
-        color: "#dddddd",
-        backgroundColor: "#222222",
-        padding: { x: 22, y: 11 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-    infoBtn.on("pointerover", () =>
-      infoBtn.setStyle({ backgroundColor: "#3a3a3a" })
-    )
-    infoBtn.on("pointerout", () =>
-      infoBtn.setStyle({ backgroundColor: "#222222" })
-    )
-    infoBtn.on("pointerdown", () => {
-      if (this.infoOpen) return
-      this.click()
-      this.showInfo()
+      repeatDelay: 1600,
     })
 
     this.add
-      .text(640, 665, "Нажми ИГРАТЬ, чтобы начать", {
+      .text(640, 248, "версия 0.2 бета", {
         fontFamily: "monospace",
-        fontSize: "18px",
+        fontSize: "24px",
+        color: "#8a8a8a",
+      })
+      .setOrigin(0.5)
+
+    // Кнопки
+    makeMenuButton(this, 640, 365, "ИГРАТЬ", {
+      width: 420,
+      height: 78,
+      fontSize: 40,
+      fill: 0x7a0000,
+      fillHover: 0xb00000,
+      stroke: 0xff5555,
+      onClick: () => this.startPlay(),
+    })
+
+    makeMenuButton(this, 640, 460, "ВЫБОР ПЕРСОНАЖА", {
+      width: 420,
+      height: 60,
+      fontSize: 26,
+      fill: 0x222230,
+      fillHover: 0x33334a,
+      stroke: 0x6a6a90,
+      onClick: () => this.goCharacterSelect(),
+    })
+
+    makeMenuButton(this, 640, 535, "ИНФОРМАЦИЯ", {
+      width: 420,
+      height: 60,
+      fontSize: 26,
+      fill: 0x222222,
+      fillHover: 0x3a3a3a,
+      stroke: 0x777777,
+      onClick: () => {
+        if (!this.infoOpen) this.showInfo()
+      },
+    })
+
+    this.add
+      .text(640, 678, "Совет: лучше играть в полноэкранном режиме (на телефоне — горизонтально)", {
+        fontFamily: "monospace",
+        fontSize: "16px",
         color: "#555555",
       })
       .setOrigin(0.5)
@@ -106,19 +104,62 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.fadeIn(500, 0, 0, 0)
   }
 
+  private buildBackground() {
+    this.add.rectangle(640, 360, 1280, 720, 0x070707).setDepth(-2)
+    // тёплое багровое свечение за заголовком
+    this.add.ellipse(640, 200, 1000, 460, 0x2a0000, 0.55).setDepth(-1)
+
+    // парящие угольки
+    for (let i = 0; i < 16; i++) {
+      const x = Phaser.Math.Between(0, 1280)
+      const y = Phaser.Math.Between(360, 760)
+      const e = this.add
+        .circle(x, y, Phaser.Math.Between(1, 3), 0xff5522, 0.55)
+        .setDepth(-1)
+      this.tweens.add({
+        targets: e,
+        y: y - Phaser.Math.Between(200, 480),
+        alpha: 0,
+        duration: Phaser.Math.Between(3500, 7000),
+        repeat: -1,
+        delay: Phaser.Math.Between(0, 3000),
+      })
+    }
+  }
+
+  private fadeAndStart(scene: string) {
+    if (this.infoOpen) return
+    if (this.menuMusic.isPlaying) this.menuMusic.stop()
+    this.cameras.main.fadeOut(400, 0, 0, 0)
+    this.time.delayedCall(420, () => this.scene.start(scene))
+  }
+
+  private startPlay() {
+    if (this.infoOpen) return
+    enterImmersive(this) // авто-фуллскрин (на ПК — при старте игры)
+    this.fadeAndStart("CharacterSelectScene")
+  }
+
+  private goCharacterSelect() {
+    if (this.infoOpen) return
+    enterImmersive(this)
+    this.fadeAndStart("CharacterSelectScene")
+  }
+
+  // ---------- ИНФОРМАЦИЯ ----------
   private showInfo() {
     this.infoOpen = true
     const c = this.add.container(0, 0).setDepth(3000)
 
     const block = this.add
-      .rectangle(640, 360, 1280, 720, 0x000000, 0.88)
+      .rectangle(640, 360, 1280, 720, 0x000000, 0.9)
       .setInteractive()
     const panel = this.add
-      .rectangle(640, 360, 900, 560, 0x120608)
-      .setStrokeStyle(3, 0x770000)
+      .rectangle(640, 360, 940, 580, 0x120608)
+      .setStrokeStyle(3, 0x990000)
 
     const title = this.add
-      .text(640, 120, "ОБ ИГРЕ", {
+      .text(640, 110, "ОБ ИГРЕ", {
         fontFamily: "monospace",
         fontSize: "44px",
         color: "#cc0000",
@@ -126,79 +167,61 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
 
-    const h1 = this.add.text(230, 185, "Что это за игра:", {
+    const h1 = this.add.text(205, 170, "Что это за игра:", {
       fontFamily: "monospace",
-      fontSize: "24px",
+      fontSize: "23px",
       color: "#ffdd00",
     })
     const p1 = this.add.text(
-      230,
-      222,
+      205,
+      206,
       "STICKMAN.EXE — короткая хоррор-история. Обычный жёлтый стикмен вышел на прогулку в прекрасный день... но что-то идёт не так.",
       {
         fontFamily: "monospace",
         fontSize: "19px",
         color: "#cccccc",
-        wordWrap: { width: 820 },
+        wordWrap: { width: 860 },
         lineSpacing: 6,
       }
     )
 
-    const h2 = this.add.text(230, 330, "Как играть:", {
+    const h2 = this.add.text(205, 310, "Как играть:", {
       fontFamily: "monospace",
-      fontSize: "24px",
+      fontSize: "23px",
       color: "#ffdd00",
     })
     const p2 = this.add.text(
-      230,
-      370,
-      "← →  — идти\nПробел или ↑  — прыжок\nПробел или Enter  — листать диалоги\nF  — полный экран",
+      205,
+      348,
+      "Клавиатура:\n  ← →  — идти,   Пробел / ↑  — прыжок\n  Пробел / Enter  — листать диалоги,   E — поговорить\n  F  — полный экран\n\nТелефон:\n  кнопки на экране (◀ ▶ и ПРЫЖОК), тап — листать диалоги\n  игра сама развернётся на весь экран в горизонтали",
       {
         fontFamily: "monospace",
-        fontSize: "20px",
+        fontSize: "19px",
         color: "#cccccc",
-        lineSpacing: 8,
-      }
-    )
-
-    const p3 = this.add.text(
-      230,
-      510,
-      "Просто иди вправо и смотри, что будет дальше...",
-      {
-        fontFamily: "monospace",
-        fontSize: "18px",
-        color: "#999999",
-        fontStyle: "italic",
+        lineSpacing: 7,
       }
     )
 
     const note = this.add
-      .text(640, 565, "версия 0.2 бета — могут быть баги", {
+      .text(640, 575, "версия 0.2 бета — могут быть баги", {
         fontFamily: "monospace",
         fontSize: "16px",
-        color: "#555555",
+        color: "#666666",
       })
       .setOrigin(0.5)
 
-    const back = this.add
-      .text(640, 615, "  ← НАЗАД  ", {
-        fontFamily: "monospace",
-        fontSize: "30px",
-        color: "#ffffff",
-        backgroundColor: "#770000",
-        padding: { x: 22, y: 10 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-    back.on("pointerover", () => back.setStyle({ backgroundColor: "#aa0000" }))
-    back.on("pointerout", () => back.setStyle({ backgroundColor: "#770000" }))
-    back.on("pointerdown", () => {
-      this.click()
-      c.destroy()
-      this.infoOpen = false
+    const back = makeMenuButton(this, 640, 625, "← НАЗАД", {
+      width: 240,
+      height: 56,
+      fontSize: 26,
+      fill: 0x7a0000,
+      fillHover: 0xb00000,
+      onClick: () => {
+        c.destroy()
+        this.infoOpen = false
+      },
     })
 
-    c.add([block, panel, title, h1, p1, h2, p2, p3, note, back])
+    c.add([block, panel, title, h1, p1, h2, p2, note, back])
   }
 }
