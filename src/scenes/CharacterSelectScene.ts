@@ -8,6 +8,20 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   create() {
+    // Фоновая музыка меню продолжается на экране выбора (без тишины).
+    let menuMusic = this.sound.get("music_menu")
+    if (!menuMusic) {
+      menuMusic = this.sound.add("music_menu", { loop: true, volume: 0.4 })
+    }
+    const startMusic = () => {
+      if (menuMusic && !menuMusic.isPlaying) menuMusic.play()
+    }
+    if (this.sound.locked) {
+      this.sound.once(Phaser.Sound.Events.UNLOCKED, startMusic)
+    } else {
+      startMusic()
+    }
+
     this.add.rectangle(640, 360, 1280, 720, 0x0b0b0b).setDepth(-2)
     this.add.ellipse(640, 360, 1100, 560, 0x1a0000, 0.5).setDepth(-1)
 

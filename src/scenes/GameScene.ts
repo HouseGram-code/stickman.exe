@@ -187,11 +187,20 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
     this.cameras.main.fadeIn(600, 0, 0, 0)
 
-    // Звук
+    // Звук — глушим музыку меню и включаем дневную тему
+    const menuMusic = this.sound.get("music_menu")
+    if (menuMusic && menuMusic.isPlaying) menuMusic.stop()
     this.musicHappy = this.sound.add("music_happy", { loop: true, volume: 0.5 })
     this.ambient = this.sound.add("ambient_horror", { loop: true, volume: 0 })
     this.heartbeat = this.sound.add("heartbeat", { loop: true, volume: 0 })
-    this.musicHappy.play()
+    const playHappy = () => {
+      if (!this.musicHappy.isPlaying) this.musicHappy.play()
+    }
+    if (this.sound.locked) {
+      this.sound.once(Phaser.Sound.Events.UNLOCKED, playHappy)
+    } else {
+      playHappy()
+    }
 
     // Диалоги
     this.dialog = new DialogBox(this)

@@ -139,7 +139,7 @@ export class MenuScene extends Phaser.Scene {
 
   private fadeAndStart(scene: string) {
     if (this.infoOpen) return
-    if (this.menuMusic.isPlaying) this.menuMusic.stop()
+    // музыку меню НЕ останавливаем — она продолжается на экране выбора персонажа
     this.cameras.main.fadeOut(400, 0, 0, 0)
     this.time.delayedCall(420, () => this.scene.start(scene))
   }
