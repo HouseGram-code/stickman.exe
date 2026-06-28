@@ -18,13 +18,22 @@ export class MenuScene extends Phaser.Scene {
 
     this.buildBackground()
 
-    // Музыка меню (запускается после первого клика, если браузер блокирует автозвук)
+    // Музыка меню. Браузеры запрещают автозвук до жеста пользователя,
+    // поэтому запускаем музыку только когда аудиоконтекст разблокирован
+    // (после первого тапа/клика) — иначе в консоль сыплется предупреждение.
     if (!this.sound.get("music_menu")) {
       this.menuMusic = this.sound.add("music_menu", { loop: true, volume: 0.4 })
     } else {
       this.menuMusic = this.sound.get("music_menu")!
     }
-    if (!this.menuMusic.isPlaying) this.menuMusic.play()
+    const startMenuMusic = () => {
+      if (this.menuMusic && !this.menuMusic.isPlaying) this.menuMusic.play()
+    }
+    if (this.sound.locked) {
+      this.sound.once(Phaser.Sound.Events.UNLOCKED, startMenuMusic)
+    } else {
+      startMenuMusic()
+    }
 
     // Заголовок с лёгкой тенью-глитчем
     this.add
