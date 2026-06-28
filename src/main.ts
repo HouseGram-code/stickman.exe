@@ -8,7 +8,6 @@ import { BattleScene } from "./scenes/BattleScene"
 import { RunnerScene } from "./scenes/RunnerScene"
 import { FinaleScene } from "./scenes/FinaleScene"
 import { SecretRoomScene } from "./scenes/SecretRoomScene"
-import "./pwa"
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

@@ -7,17 +7,16 @@ export default defineConfig({
   build: {
     // бандл кладём в _app, чтобы не смешивать с игровыми ассетами из public/assets
     assetsDir: "_app",
-    // ВАЖНО: минификация esbuild ломает систему классов Phaser в проде
-    // (Uncaught TypeError: Cannot read properties of undefined 'value' в Phaser.Class),
-    // причём недетерминированно. В dev (без минификации) игра стабильна, поэтому
-    // отключаем минификацию и в проде — надёжность важнее размера бандла.
-    minify: false,
   },
   plugins: [
     VitePWA({
+      // ВРЕМЕННО: самоуничтожающийся service worker. Он вычищает старый PWA-кэш,
+      // из-за которого на части устройств игра падала (битый/устаревший кэш),
+      // и отписывает сам себя. Офлайн временно отключён — страница грузится из сети.
+      // Вернём офлайн отдельно, проверив сборку через headless-тест.
+      selfDestroying: true,
       // service worker обновляется сам, когда выходит новая сборка
       registerType: "autoUpdate",
-      // регистрируем SW вручную из src/pwa.ts (чтобы показать прогресс/статус офлайна)
       injectRegister: false,
       includeAssets: ["favicon.svg"],
       manifest: {
