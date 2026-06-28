@@ -8,6 +8,8 @@ import { BattleScene } from "./scenes/BattleScene"
 import { RunnerScene } from "./scenes/RunnerScene"
 import { FinaleScene } from "./scenes/FinaleScene"
 import { SecretRoomScene } from "./scenes/SecretRoomScene"
+// Регистрация service worker: офлайн-кэш + баннер прогресса + авто-обновление
+import "./pwa"
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
