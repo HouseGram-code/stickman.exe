@@ -81,14 +81,14 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.startPlay(),
     })
 
-    makeMenuButton(this, 640, 460, "ВЫБОР ПЕРСОНАЖА", {
+    makeMenuButton(this, 640, 460, "УРОВНИ", {
       width: 420,
       height: 60,
-      fontSize: 26,
+      fontSize: 28,
       fill: 0x222230,
       fillHover: 0x33334a,
       stroke: 0x6a6a90,
-      onClick: () => this.goCharacterSelect(),
+      onClick: () => this.goLevels(),
     })
 
     makeMenuButton(this, 640, 535, "ИНФОРМАЦИЯ", {
@@ -139,7 +139,8 @@ export class MenuScene extends Phaser.Scene {
 
   private fadeAndStart(scene: string) {
     if (this.infoOpen) return
-    // музыку меню НЕ останавливаем — она продолжается на экране выбора персонажа
+    // музыку меню НЕ останавливаем: на экране «УРОВНИ» она продолжается,
+    // а GameScene сам остановит её и включит свою музыку
     this.cameras.main.fadeOut(400, 0, 0, 0)
     this.time.delayedCall(420, () => this.scene.start(scene))
   }
@@ -147,13 +148,13 @@ export class MenuScene extends Phaser.Scene {
   private startPlay() {
     if (this.infoOpen) return
     enterImmersive(this) // авто-фуллскрин (на ПК — при старте игры)
-    this.fadeAndStart("CharacterSelectScene")
+    this.fadeAndStart("GameScene")
   }
 
-  private goCharacterSelect() {
+  private goLevels() {
     if (this.infoOpen) return
     enterImmersive(this)
-    this.fadeAndStart("CharacterSelectScene")
+    this.fadeAndStart("LevelSelectScene")
   }
 
   // ---------- ИНФОРМАЦИЯ ----------
