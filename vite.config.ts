@@ -7,6 +7,11 @@ export default defineConfig({
   build: {
     // бандл кладём в _app, чтобы не смешивать с игровыми ассетами из public/assets
     assetsDir: "_app",
+    // ВАЖНО: минификация esbuild ломает систему классов Phaser в проде
+    // (Uncaught TypeError: Cannot read properties of undefined 'value' в Phaser.Class),
+    // причём недетерминированно. В dev (без минификации) игра стабильна, поэтому
+    // отключаем минификацию и в проде — надёжность важнее размера бандла.
+    minify: false,
   },
   plugins: [
     VitePWA({
@@ -45,8 +50,8 @@ export default defineConfig({
         globPatterns: [
           "**/*.{js,css,html,svg,png,jpg,jpeg,gif,webp,ico,wav,mp3,ogg,woff2}",
         ],
-        // самый большой ассет ~0.5МБ, бандл ~1.6МБ — поднимаем лимит с запасом
-        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        // без минификации бандл больше (~5МБ) — поднимаем лимит precache с запасом
+        maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         // одностраничное приложение: любые навигации отдаём index.html из кэша
         navigateFallback: "index.html",
