@@ -122,8 +122,19 @@ async function pollProgress() {
 }
 
 if ("serviceWorker" in navigator) {
-  // на первом заходе SW ещё не управляет страницей -> показываем прогресс
+  // на первом заходе SW ещё не управляет страницей -> показываем прогресс кэширования
   const firstVisit = !navigator.serviceWorker.controller
+
+  // Авто-обновление: когда активировался НОВЫЙ service worker (вышла новая версия
+  // игры), он берёт управление страницей -> один раз перезагружаемся, чтобы игрок
+  // сразу получил свежую сборку, а не сидел на старом кэше.
+  let reloading = false
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading || firstVisit) return
+    reloading = true
+    setText("Обновление…", "Загружаю новую версию игры")
+    window.location.reload()
+  })
 
   registerSW({
     immediate: true,
@@ -137,8 +148,18 @@ if ("serviceWorker" in navigator) {
         )
       })
     },
-    onRegisteredSW() {
+    onRegisteredSW(_swUrl, reg) {
       if (firstVisit) pollProgress()
+      if (!reg) return
+      // регулярно проверяем, не вышла ли новая версия, и при возвращении на вкладку
+      const check = () => {
+        reg.update().catch(() => {})
+      }
+      setInterval(check, 5 * 60 * 1000)
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") check()
+      })
+      window.addEventListener("focus", check)
     },
   })
 }
