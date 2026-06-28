@@ -1,5 +1,6 @@
 import Phaser from "phaser"
 import { DialogBox, DialogLine } from "../ui/Dialog"
+import { makeMenuButton } from "../ui/MenuButton"
 
 const W = 1280
 const H = 720
@@ -250,12 +251,12 @@ export class BattleScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(31)
 
-    // Кнопки над головой
-    this.btnRock = this.makeButton(330, 470, "🪨 КАМЕНЬ", 0x555555, () =>
-      this.playerAttack("rock")
+    // Кнопки над головой (разнесены, чтобы зоны нажатия не пересекались)
+    this.btnRock = this.makeButton(320, 470, "🪨 КАМЕНЬ", 0x555555, () =>
+      this.playerAttack("rock"), 230
     )
-    this.btnDirt = this.makeButton(560, 470, "🟤 ЗЕМЛЯ", 0x6b3f1a, () =>
-      this.playerAttack("dirt")
+    this.btnDirt = this.makeButton(600, 470, "🟤 ЗЕМЛЯ", 0x6b3f1a, () =>
+      this.playerAttack("dirt"), 230
     )
 
     this.updateBars()
@@ -543,32 +544,21 @@ export class BattleScene extends Phaser.Scene {
     y: number,
     label: string,
     color: number,
-    onClick: () => void
+    onClick: () => void,
+    width = 300
   ) {
-    const bw = 300
-    const bh = 54
-    const bg = this.add
-      .rectangle(0, 0, bw, bh, color, 0.92)
-      .setStrokeStyle(3, 0xffffff)
-    const txt = this.add
-      .text(0, 0, label, { fontFamily: "monospace", fontSize: "22px", color: "#ffffff" })
-      .setOrigin(0.5)
-    const c = this.add
-      .container(x, y, [bg, txt])
-      .setScrollFactor(0)
-      .setDepth(40)
-      .setSize(bw, bh)
-    c.setInteractive(
-      new Phaser.Geom.Rectangle(-bw / 2, -bh / 2, bw, bh),
-      Phaser.Geom.Rectangle.Contains
-    )
-    c.on("pointerover", () => bg.setFillStyle(color, 1))
-    c.on("pointerout", () => bg.setFillStyle(color, 0.92))
-    c.on("pointerdown", () => {
-      this.sound.play("click", { volume: 0.5 })
-      onClick()
+    const hover = Phaser.Display.Color.IntegerToColor(color).brighten(22).color
+    return makeMenuButton(this, x, y, label, {
+      width,
+      height: 54,
+      fontSize: 22,
+      fill: color,
+      fillHover: hover,
+      stroke: 0xffffff,
+      scrollFactor0: true,
+      depth: 40,
+      onClick,
     })
-    return c
   }
 
   private setButtons(on: boolean) {

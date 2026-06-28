@@ -9,11 +9,13 @@ export interface MenuButtonOptions {
   stroke?: number
   textColor?: string
   depth?: number
+  scrollFactor0?: boolean
   onClick: () => void
 }
 
 // Стилизованная кнопка меню: рамка, подсветка/масштаб при наведении,
-// «нажатие» с лёгким сжатием и звуком клика.
+// «нажатие» с лёгким сжатием и звуком клика. Кликабельная зона чуть больше
+// самой кнопки — так удобнее попадать пальцем на телефоне.
 export function makeMenuButton(
   scene: Phaser.Scene,
   x: number,
@@ -26,6 +28,7 @@ export function makeMenuButton(
   const fill = opts.fill ?? 0x7a0000
   const fillHover = opts.fillHover ?? 0xb00000
   const stroke = opts.stroke ?? 0xff5555
+  const pad = 14 // запас зоны нажатия вокруг кнопки
 
   const shadow = scene.add.rectangle(0, 6, w, h, 0x000000, 0.55)
   const bg = scene.add.rectangle(0, 0, w, h, fill).setStrokeStyle(3, stroke, 0.9)
@@ -40,10 +43,13 @@ export function makeMenuButton(
     .setOrigin(0.5)
 
   const c = scene.add.container(x, y, [shadow, bg, sheen, txt]).setSize(w, h)
+  if (opts.scrollFactor0) c.setScrollFactor(0)
   if (opts.depth != null) c.setDepth(opts.depth)
 
+  // Делаем интерактивным сам контейнер (чтобы можно было включать/выключать
+  // через c.input.enabled), зона нажатия с запасом по краям.
   c.setInteractive(
-    new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+    new Phaser.Geom.Rectangle(-w / 2 - pad, -h / 2 - pad, w + pad * 2, h + pad * 2),
     Phaser.Geom.Rectangle.Contains
   )
   if (c.input) c.input.cursor = "pointer"

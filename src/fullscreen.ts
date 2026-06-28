@@ -1,8 +1,7 @@
 import Phaser from "phaser"
 
-// Утилиты «погружения»: автоматический полноэкранный режим и поворот
-// телефона в альбомную ориентацию. Всё это можно вызывать только из
-// обработчика пользовательского жеста (тап/клик) — иначе браузер запретит.
+// Утилиты «погружения»: полноэкранный режим + поворот телефона в альбомную
+// ориентацию. Вызывать только из обработчика жеста пользователя (тап/клик).
 
 export function isTouchDevice(): boolean {
   try {
@@ -15,37 +14,57 @@ export function isTouchDevice(): boolean {
   }
 }
 
-// Зафиксировать альбомную ориентацию (работает в фуллскрине на Android;
-// на iOS API нет — там подсказка «поверни телефон» из index.html).
+// Зафиксировать альбомную ориентацию (Android в фуллскрине; на iOS API нет).
 function lockLandscape() {
   try {
-    const orientation: any = (screen as any).orientation
-    if (orientation && typeof orientation.lock === "function") {
-      orientation.lock("landscape").catch(() => {})
-    }
+    const o: any = (screen as any).orientation
+    if (o && typeof o.lock === "function") o.lock("landscape").catch(() => {})
   } catch {
     // не поддерживается — игнорируем
   }
 }
 
-// Войти в полноэкранный режим и повернуть в альбомную ориентацию.
-export function enterImmersive(scene: Phaser.Scene) {
+// ВАЖНО: после входа в фуллскрин и поворота экрана у Phaser «съезжают»
+// границы канваса для ввода (canvasBounds). Из-за этого тапы попадают мимо
+// и кнопки перестают нажиматься. Принудительный refresh() пересчитывает их.
+function refreshScale(scale: Phaser.Scale.ScaleManager) {
   try {
-    if (scene.scale && !scene.scale.isFullscreen) {
-      scene.scale.startFullscreen()
-    }
+    scale.refresh()
+  } catch {
+    // ignore
+  }
+}
+
+export function enterImmersive(scene: Phaser.Scene) {
+  const scale = scene.scale
+  try {
+    if (scale && !scale.isFullscreen) scale.startFullscreen()
   } catch {
     // фуллскрин недоступен — продолжаем без него
   }
-  // даём браузеру войти в фуллскрин, затем фиксируем ориентацию
-  setTimeout(lockLandscape, 60)
+  // вход в фуллскрин -> лочим ориентацию -> несколько раз пересчитываем масштаб,
+  // т.к. поворот/ресайз приходят с задержкой
+  setTimeout(() => {
+    lockLandscape()
+    refreshScale(scale)
+  }, 80)
+  setTimeout(() => refreshScale(scale), 350)
+  setTimeout(() => refreshScale(scale), 900)
 }
 
-// Однократно повесить авто-погружение на первый тап (только на телефонах,
-// чтобы на ПК не уводить в фуллскрин неожиданно).
-let hooked = false
-export function autoImmersiveOnFirstGesture(scene: Phaser.Scene) {
-  if (hooked || !isTouchDevice()) return
-  hooked = true
-  scene.input.once(Phaser.Input.Events.POINTER_DOWN, () => enterImmersive(scene))
+// Один раз на игру: пересчитывать ввод при смене ориентации/выходе из фуллскрина,
+// чтобы кнопки не «промахивались» после поворота телефона.
+let globalHooked = false
+export function installInputResizeFix(scene: Phaser.Scene) {
+  if (globalHooked) return
+  globalHooked = true
+  const scale = scene.scale
+  const refresh = () => refreshScale(scale)
+  try {
+    window.addEventListener("orientationchange", () => setTimeout(refresh, 250))
+    scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, () => setTimeout(refresh, 150))
+    scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(refresh, 150))
+  } catch {
+    // ignore
+  }
 }

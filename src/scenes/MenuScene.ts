@@ -1,6 +1,6 @@
 import Phaser from "phaser"
 import { makeMenuButton } from "../ui/MenuButton"
-import { autoImmersiveOnFirstGesture, enterImmersive } from "../fullscreen"
+import { enterImmersive, installInputResizeFix } from "../fullscreen"
 
 export class MenuScene extends Phaser.Scene {
   private infoOpen = false
@@ -13,8 +13,9 @@ export class MenuScene extends Phaser.Scene {
   create() {
     this.infoOpen = false
 
-    // на телефоне первый тап -> фуллскрин + альбомная ориентация
-    autoImmersiveOnFirstGesture(this)
+    // Поворот/ресайз экрана пересчитывает ввод, чтобы кнопки не промахивались.
+    // Фуллскрин и поворот в альбомную включаются при нажатии «ИГРАТЬ».
+    installInputResizeFix(this)
 
     this.buildBackground()
 
